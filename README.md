@@ -1,4 +1,4 @@
-# Muhammad Fahad Portfolio Clone
+# Muhammad Fahad Portfolio 
 
 This project recreates the public portfolio at [muhammadfahad-portfolio.lovable.app](https://muhammadfahad-portfolio.lovable.app) in a GitHub-ready React + TypeScript + Vite structure.
 
