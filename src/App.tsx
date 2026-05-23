@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 const navItems = [
   ["home", "Home"],
@@ -137,15 +137,26 @@ const certifications = [
 ] as const;
 
 function App() {
+  const counter = projects.length;
   const [menuOpen, setMenuOpen] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [loaded, setLoaded] = useState(false);
+  const [cursor, setCursor] = useState({ x: 0, y: 0 });
   const [form, setForm] = useState({
     name: "",
     email: "",
     subject: "",
     message: "",
   });
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setLoaded(true);
+    }, 750);
+
+    return () => window.clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const updateProgress = () => {
@@ -164,7 +175,36 @@ function App() {
     };
   }, []);
 
-  const counter = useMemo(() => projects.length, []);
+  useEffect(() => {
+    const updateCursor = (event: globalThis.MouseEvent) => {
+      setCursor({ x: event.clientX, y: event.clientY });
+    };
+
+    window.addEventListener("mousemove", updateCursor);
+
+    return () => {
+      window.removeEventListener("mousemove", updateCursor);
+    };
+  }, []);
+
+  useEffect(() => {
+    const nodes = document.querySelectorAll<HTMLElement>("[data-reveal]");
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.14, rootMargin: "0px 0px -8% 0px" },
+    );
+
+    nodes.forEach((node) => observer.observe(node));
+
+    return () => observer.disconnect();
+  }, []);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -173,7 +213,13 @@ function App() {
 
   return (
     <div className="site-shell">
+      <div className={`page-loader${loaded ? " is-hidden" : ""}`}>
+        <div className="loader-mark" />
+        <span>Muhammad Fahad</span>
+      </div>
+
       <div className="scroll-progress" style={{ transform: `scaleX(${progress / 100})` }} />
+      <div className="cursor-orb" style={{ transform: `translate(${cursor.x}px, ${cursor.y}px)` }} />
 
       <header className="site-header">
         <div className="container nav-wrap">
@@ -225,100 +271,49 @@ function App() {
               <span className="status-dot" />
               Available for AI automation projects
             </div>
-            <h1>Hi, I&apos;m Muhammad</h1>
-            <h1>Fahad</h1>
+            <h1 data-reveal="up">Hi, I&apos;m Muhammad Fahad</h1>
+            <h2 data-reveal="up" style={{ transitionDelay: "120ms" }}>
+              AI Automation &amp; Agentic AI Specialist
+            </h2>
             <p>
               Crafting immersive digital experiences with modern web technologies,
               intelligent automation, and agentic AI systems.
             </p>
+            <div className="hero-actions" data-reveal="up" style={{ transitionDelay: "240ms" }}>
+              <a href="#contact" className="primary-link">
+                Hire Me
+              </a>
+              <a href="#projects" className="secondary-link hero-secondary">
+                View Projects
+              </a>
+            </div>
           </div>
 
-          <div className="hero-card">
-            <div className="hero-card-glow" />
-            <div className="hero-side hero-side-left">
-              <span className="eyebrow">Muhammad Fahad</span>
-              <h2>AI Automation &amp; Agentic AI Specialist</h2>
-              <p>
-                Crafting immersive digital experiences with modern web technologies,
-                intelligent automation, and agentic AI systems.
-              </p>
+          <div className="hero-metrics" data-reveal="up" style={{ transitionDelay: "360ms" }}>
+            <div className="metric-chip glass-card">
+              <span>Projects shipped</span>
+              <strong>{counter}</strong>
             </div>
-
-            <div className="phone-zone">
-              <div className="phone">
-                <div className="phone-notch" />
-                <div className="phone-screen">
-                  <div className="ring-wrap">
-                    <div className="ring-center">
-                      <strong>{counter}</strong>
-                      <span>Projects Shipped</span>
-                    </div>
-                    <svg viewBox="0 0 144 144" className="progress-svg" aria-hidden="true">
-                      <circle cx="72" cy="72" r="64" className="ring-base" />
-                      <circle
-                        cx="72"
-                        cy="72"
-                        r="64"
-                        className="ring-fill"
-                        style={{ strokeDashoffset: 402 - 402 * 0.74 }}
-                      />
-                    </svg>
-                  </div>
-
-                  <div className="widget-card">
-                    <span>Status</span>
-                    <strong>On track</strong>
-                  </div>
-                  <div className="widget-card">
-                    <span>Streak</span>
-                    <strong>+12 this week</strong>
-                  </div>
-                </div>
-              </div>
-
-              <div className="floating-badge floating-left">
-                <span>Live</span>
-                <strong>All systems go</strong>
-              </div>
-              <div className="floating-badge floating-right">
-                <span>Today</span>
-                <strong>Goal complete</strong>
-              </div>
+            <div className="metric-chip glass-card">
+              <span>Focus</span>
+              <strong>AI + Automation</strong>
             </div>
-
-            <div className="hero-side hero-side-right">
-              <span className="eyebrow">Insight</span>
-              <h3>{counter}</h3>
-              <p>Projects Shipped</p>
-            </div>
-
-            <div className="hero-overlay">
-              <h2>Let&apos;s build something extraordinary.</h2>
-              <p>
-                Available for AI automation, agentic systems, and premium web
-                projects.
-              </p>
-              <div className="hero-actions">
-                <a href="#contact" className="primary-link">
-                  Hire Me
-                </a>
-                <a href="#projects" className="secondary-link">
-                  View Projects
-                </a>
-              </div>
+            <div className="metric-chip glass-card">
+              <span>Status</span>
+              <strong>Available now</strong>
             </div>
           </div>
         </section>
 
         <section className="section" id="about">
           <div className="container">
-            <div className="section-kicker">About Me</div>
-            <h2 className="section-title center">
+            <div className="section-kicker" data-reveal="up">About Me</div>
+            <h2 className="section-title center" data-reveal="up">
               Engineering the future, <span className="text-gradient">one workflow at a time</span>
             </h2>
 
             <div className="about-grid">
-              <div className="profile-card glass-card">
+              <div className="profile-card glass-card" data-reveal="left">
                 <div className="profile-orb">MF</div>
                 <div className="profile-footer glass-card">
                   <span>Founder</span>
@@ -326,7 +321,7 @@ function App() {
                 </div>
               </div>
 
-              <div className="about-copy">
+              <div className="about-copy" data-reveal="right">
                 <p className="lead">
                   I&apos;m a <strong>BSCS student at UMT</strong> and the founder of{" "}
                   <span className="text-gradient strongish">VoxAi</span> - a Pakistan-based
@@ -342,19 +337,19 @@ function App() {
                 </p>
 
                 <div className="fact-grid">
-                  <div className="fact-card glass-card">
+                  <div className="fact-card glass-card" data-reveal="up">
                     <span>Location</span>
                     <strong>Lahore, Pakistan</strong>
                   </div>
-                  <div className="fact-card glass-card">
+                  <div className="fact-card glass-card" data-reveal="up" style={{ transitionDelay: "90ms" }}>
                     <span>Company</span>
                     <strong>VoxAi</strong>
                   </div>
-                  <div className="fact-card glass-card">
+                  <div className="fact-card glass-card" data-reveal="up" style={{ transitionDelay: "180ms" }}>
                     <span>Education</span>
                     <strong>BSCS @ UMT - 2024-2028</strong>
                   </div>
-                  <div className="fact-card glass-card">
+                  <div className="fact-card glass-card" data-reveal="up" style={{ transitionDelay: "270ms" }}>
                     <span>Role</span>
                     <strong>Founder &amp; Lead Automation Architect</strong>
                   </div>
@@ -366,14 +361,19 @@ function App() {
 
         <section className="section" id="skills">
           <div className="container">
-            <div className="section-kicker">Skills</div>
-            <h2 className="section-title center">
+            <div className="section-kicker" data-reveal="up">Skills</div>
+            <h2 className="section-title center" data-reveal="up">
               The <span className="text-gradient">stack</span> I build with
             </h2>
 
             <div className="skills-grid">
-              {skillGroups.map((group) => (
-                <article key={group.title} className="glass-card skill-card">
+              {skillGroups.map((group, index) => (
+                <article
+                  key={group.title}
+                  className="glass-card skill-card"
+                  data-reveal="up"
+                  style={{ transitionDelay: `${index * 80}ms` }}
+                >
                   <h3>
                     <span className="text-gradient">{group.title}</span>
                   </h3>
@@ -398,17 +398,22 @@ function App() {
 
         <section className="section" id="projects">
           <div className="container">
-            <div className="section-kicker">Projects</div>
-            <h2 className="section-title center">
+            <div className="section-kicker" data-reveal="up">Projects</div>
+            <h2 className="section-title center" data-reveal="up">
               Things I&apos;ve <span className="text-gradient">shipped</span>
             </h2>
-            <p className="section-subtitle center">
+            <p className="section-subtitle center" data-reveal="up">
               A mix of AI, automation, and engineering work - built end-to-end.
             </p>
 
             <div className="projects-grid">
-              {projects.map((project) => (
-                <article key={project.index} className="glass-card project-card">
+              {projects.map((project, index) => (
+                <article
+                  key={project.index}
+                  className="glass-card project-card"
+                  data-reveal="up"
+                  style={{ transitionDelay: `${index * 70}ms` }}
+                >
                   <div className="project-top">
                     <div className="project-icon" />
                     <span>{project.index}</span>
@@ -428,14 +433,19 @@ function App() {
 
         <section className="section" id="certifications">
           <div className="container narrow">
-            <div className="section-kicker">Certifications</div>
-            <h2 className="section-title center">
+            <div className="section-kicker" data-reveal="up">Certifications</div>
+            <h2 className="section-title center" data-reveal="up">
               Credentials &amp; <span className="text-gradient">milestones</span>
             </h2>
 
             <div className="cert-grid">
-              {certifications.map((item) => (
-                <article key={item.title} className="glass-card cert-card">
+              {certifications.map((item, index) => (
+                <article
+                  key={item.title}
+                  className="glass-card cert-card"
+                  data-reveal="up"
+                  style={{ transitionDelay: `${index * 90}ms` }}
+                >
                   <div className="cert-icon" />
                   <div>
                     <h3>{item.title}</h3>
@@ -454,16 +464,16 @@ function App() {
 
         <section className="section contact-section" id="contact">
           <div className="container contact-wrap">
-            <div className="section-kicker">Contact</div>
-            <h2 className="section-title center">
+            <div className="section-kicker" data-reveal="up">Contact</div>
+            <h2 className="section-title center" data-reveal="up">
               Let&apos;s build something <span className="text-gradient">intelligent</span>
             </h2>
-            <p className="section-subtitle center">
+            <p className="section-subtitle center" data-reveal="up">
               Have a workflow to automate or an AI product to ship? Drop a message.
             </p>
 
             <div className="contact-grid">
-              <div className="contact-cards">
+              <div className="contact-cards" data-reveal="left">
                 <a className="glass-card contact-card" href="mailto:f2024266822@umt.edu.pk">
                   <span>Email</span>
                   <strong>f2024266822@umt.edu.pk</strong>
@@ -503,7 +513,7 @@ function App() {
                 </div>
               </div>
 
-              <form className="glass-card contact-form" onSubmit={handleSubmit}>
+              <form className="glass-card contact-form" data-reveal="right" onSubmit={handleSubmit}>
                 <div className="form-grid">
                   <label>
                     <span>Name</span>
@@ -557,7 +567,7 @@ function App() {
 
       <footer className="site-footer">
         <div className="container footer-grid">
-          <div className="footer-brand">
+          <div className="footer-brand" data-reveal="up">
             <div className="footer-mark">{"</>"}</div>
             <span>FAHAD</span>
             <p>
@@ -575,7 +585,7 @@ function App() {
             </div>
           </div>
 
-          <div>
+          <div data-reveal="up" style={{ transitionDelay: "120ms" }}>
             <h4>Navigation</h4>
             <div className="footer-links">
               {navItems.map(([id, label]) => (
@@ -586,7 +596,7 @@ function App() {
             </div>
           </div>
 
-          <div>
+          <div data-reveal="up" style={{ transitionDelay: "240ms" }}>
             <h4>Get in Touch</h4>
             <p>Have a project in mind or want to collaborate? Let&apos;s build something extraordinary together.</p>
             <a className="footer-cta" href="mailto:f2024266822@umt.edu.pk">
