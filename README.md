@@ -38,9 +38,4 @@ npm run build
 `-- vite.config.ts
 ```
 
-## Included sections
 
-- Fixed header with desktop and mobile navigation
-- Cinematic hero section with showcase card
-- About, Skills, Projects, Certifications, Contact, and Footer sections
-- Responsive styling suitable for GitHub upload and deployment
