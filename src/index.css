@@ -28,6 +28,7 @@ body {
     radial-gradient(circle at top, rgba(63, 102, 255, 0.08), transparent 32%),
     linear-gradient(180deg, #fbfbfe 0%, #f5f7fb 100%);
   color: var(--foreground);
+  overflow-x: clip;
 }
 
 body,
@@ -100,6 +101,11 @@ textarea {
   mix-blend-mode: multiply;
   pointer-events: none;
   transition: transform 0.09s linear;
+}
+
+.magnetic {
+  will-change: transform;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
 }
 
 .container {
@@ -263,6 +269,14 @@ textarea {
   gap: 1.75rem;
 }
 
+.hero-canvas-shell {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.72;
+  filter: saturate(1.08) contrast(1.1);
+}
+
 .hero-grid {
   position: absolute;
   inset: 0;
@@ -275,7 +289,7 @@ textarea {
 
 .hero-copy {
   position: relative;
-  z-index: 2;
+  z-index: 3;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -835,6 +849,7 @@ textarea {
   font-weight: 700;
   letter-spacing: -0.08em;
   white-space: nowrap;
+  pointer-events: none;
 }
 
 [data-reveal] {
@@ -941,6 +956,10 @@ textarea {
   }
 
   .cursor-orb {
+    display: none;
+  }
+
+  .hero-canvas-shell {
     display: none;
   }
 

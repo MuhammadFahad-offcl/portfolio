@@ -1,4 +1,8 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, lazy, Suspense, useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
+import Lenis from "lenis";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 const navItems = [
   ["home", "Home"],
@@ -142,7 +146,10 @@ function App() {
   const [submitted, setSubmitted] = useState(false);
   const [progress, setProgress] = useState(0);
   const [loaded, setLoaded] = useState(false);
-  const [cursor, setCursor] = useState({ x: 0, y: 0 });
+  const [isMobile, setIsMobile] = useState(false);
+  const cursorRef = useRef<HTMLDivElement>(null);
+  const pointer = useRef({ x: 0, y: 0 });
+  const smoothPointer = useRef({ x: 0, y: 0 });
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -156,6 +163,18 @@ function App() {
     }, 750);
 
     return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 860px)");
+    const updateMedia = () => {
+      setIsMobile(media.matches);
+    };
+
+    updateMedia();
+    media.addEventListener("change", updateMedia);
+
+    return () => media.removeEventListener("change", updateMedia);
   }, []);
 
   useEffect(() => {
@@ -176,14 +195,53 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (isMobile) return;
+    let frame = 0;
+
     const updateCursor = (event: globalThis.MouseEvent) => {
-      setCursor({ x: event.clientX, y: event.clientY });
+      pointer.current.x = event.clientX;
+      pointer.current.y = event.clientY;
     };
 
     window.addEventListener("mousemove", updateCursor);
 
+    const tick = () => {
+      const lerp = 0.16;
+      smoothPointer.current.x += (pointer.current.x - smoothPointer.current.x) * lerp;
+      smoothPointer.current.y += (pointer.current.y - smoothPointer.current.y) * lerp;
+
+      if (cursorRef.current) {
+        cursorRef.current.style.transform = `translate(${smoothPointer.current.x}px, ${smoothPointer.current.y}px)`;
+      }
+      frame = window.requestAnimationFrame(tick);
+    };
+
+    frame = window.requestAnimationFrame(tick);
+
     return () => {
       window.removeEventListener("mousemove", updateCursor);
+      window.cancelAnimationFrame(frame);
+    };
+  }, [isMobile]);
+
+  useEffect(() => {
+    const lenis = new Lenis({
+      duration: 1.2,
+      smoothWheel: true,
+      wheelMultiplier: 0.9,
+      touchMultiplier: 1.1,
+    });
+
+    let rafId = 0;
+    const raf = (time: number) => {
+      lenis.raf(time);
+      rafId = window.requestAnimationFrame(raf);
+    };
+    rafId = window.requestAnimationFrame(raf);
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      lenis.destroy();
     };
   }, []);
 
@@ -206,6 +264,71 @@ function App() {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    const timeline = gsap.timeline({
+      scrollTrigger: {
+        trigger: "#skills",
+        start: "top 75%",
+      },
+    });
+
+    timeline.fromTo(
+      ".skill-card",
+      { y: 48, opacity: 0, filter: "blur(10px)" },
+      { y: 0, opacity: 1, filter: "blur(0px)", stagger: 0.08, duration: 0.7, ease: "power2.out" },
+    );
+
+    gsap.utils.toArray<HTMLElement>(".project-card").forEach((card, index) => {
+      gsap.fromTo(
+        card,
+        { y: 30, opacity: 0.3 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 0.7,
+          ease: "power2.out",
+          delay: index * 0.02,
+          scrollTrigger: {
+            trigger: card,
+            start: "top 88%",
+          },
+        },
+      );
+    });
+
+    return () => {
+      timeline.kill();
+      ScrollTrigger.getAll().forEach((item) => item.kill());
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isMobile) return;
+    const magnets = Array.from(document.querySelectorAll<HTMLElement>(".magnetic"));
+    const handlers = magnets.map((element) => {
+      const move = (event: MouseEvent) => {
+        const rect = element.getBoundingClientRect();
+        const dx = event.clientX - (rect.left + rect.width / 2);
+        const dy = event.clientY - (rect.top + rect.height / 2);
+        element.style.transform = `translate(${dx * 0.08}px, ${dy * 0.08}px)`;
+      };
+      const leave = () => {
+        element.style.transform = "translate(0px, 0px)";
+      };
+      element.addEventListener("mousemove", move);
+      element.addEventListener("mouseleave", leave);
+      return { element, move, leave };
+    });
+
+    return () => {
+      handlers.forEach(({ element, move, leave }) => {
+        element.removeEventListener("mousemove", move);
+        element.removeEventListener("mouseleave", leave);
+        element.style.transform = "translate(0px, 0px)";
+      });
+    };
+  }, [isMobile]);
+
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSubmitted(true);
@@ -219,7 +342,7 @@ function App() {
       </div>
 
       <div className="scroll-progress" style={{ transform: `scaleX(${progress / 100})` }} />
-      <div className="cursor-orb" style={{ transform: `translate(${cursor.x}px, ${cursor.y}px)` }} />
+      <div ref={cursorRef} className="cursor-orb" />
 
       <header className="site-header">
         <div className="container nav-wrap">
@@ -265,8 +388,18 @@ function App() {
 
       <main>
         <section className="hero" id="home">
+          {!isMobile ? (
+            <Suspense fallback={null}>
+              <HeroScene mobile={isMobile} />
+            </Suspense>
+          ) : null}
           <div className="hero-grid" />
-          <div className="hero-copy">
+          <motion.div
+            className="hero-copy"
+            initial={{ opacity: 0, y: 30, filter: "blur(8px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            transition={{ duration: 0.9, ease: "easeOut" }}
+          >
             <div className="status-pill">
               <span className="status-dot" />
               Available for AI automation projects
@@ -280,25 +413,25 @@ function App() {
               intelligent automation, and agentic AI systems.
             </p>
             <div className="hero-actions" data-reveal="up" style={{ transitionDelay: "240ms" }}>
-              <a href="#contact" className="primary-link">
+              <a href="#contact" className="primary-link magnetic">
                 Hire Me
               </a>
-              <a href="#projects" className="secondary-link hero-secondary">
+              <a href="#projects" className="secondary-link hero-secondary magnetic">
                 View Projects
               </a>
             </div>
-          </div>
+          </motion.div>
 
           <div className="hero-metrics" data-reveal="up" style={{ transitionDelay: "360ms" }}>
-            <div className="metric-chip glass-card">
+            <div className="metric-chip glass-card magnetic">
               <span>Projects shipped</span>
               <strong>{counter}</strong>
             </div>
-            <div className="metric-chip glass-card">
+            <div className="metric-chip glass-card magnetic">
               <span>Focus</span>
               <strong>AI + Automation</strong>
             </div>
-            <div className="metric-chip glass-card">
+            <div className="metric-chip glass-card magnetic">
               <span>Status</span>
               <strong>Available now</strong>
             </div>
@@ -620,3 +753,6 @@ function App() {
 }
 
 export default App;
+const HeroScene = lazy(() => import("./components/HeroScene"));
+
+gsap.registerPlugin(ScrollTrigger);
